@@ -42,19 +42,19 @@
 
 ## Phase 3: Hybrid Code-RAG Engine (Qdrant + BM25 + FlashRank)
 
-- [ ] **TASK-301: AST Syntactic Chunker**
+- [x] **TASK-301: AST Syntactic Chunker**
   - **Description:** Implement `ASTChunker` (`src/repopilot/rag/chunker.py`) that chunks code along exact function and class boundaries rather than arbitrary token counts.
   - **Acceptance Criteria:** Zero chunks split mid-statement; every chunk retains parent class, signature header, and module path metadata.
 
-- [ ] **TASK-302: Dense Vector Store & FastEmbed Integration**
+- [x] **TASK-302: Dense Vector Store & FastEmbed Integration**
   - **Description:** Implement `QdrantVectorStore` (`src/repopilot/rag/vector_store.py`) integrating `FastEmbed` for local embedding generation (`bge-small-en-v1.5`).
   - **Acceptance Criteria:** Dense search returns top-K semantically relevant functions with sub-30ms latency on CPU.
 
-- [ ] **TASK-303: Rank-BM25 Sparse Lexical Indexer**
+- [x] **TASK-303: Rank-BM25 Sparse Lexical Indexer**
   - **Description:** Implement `BM25CodeIndex` (`src/repopilot/rag/bm25_index.py`) tokenizing code identifiers, variable names, and error strings.
   - **Acceptance Criteria:** Exact symbol searches (e.g., `test_connection_pool_overflow`) achieve 100% recall in the top-3 results.
 
-- [ ] **TASK-304: Reciprocal Rank Fusion & FlashRank Reranker**
+- [x] **TASK-304: Reciprocal Rank Fusion & FlashRank Reranker**
   - **Description:** Implement RRF merger ($k=60$) and `FlashRankReranker` (`src/repopilot/rag/reranker.py`) running local cross-encoders.
   - **Acceptance Criteria:** RRF merges dense and sparse results; FlashRank reranks 25 candidates down to top 5 in $<150$ms without GPU dependencies.
 
