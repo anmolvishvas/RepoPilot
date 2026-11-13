@@ -26,15 +26,15 @@
 
 ## Phase 2: Tree-sitter AST Parser & Symbol Dependency Graph Builder
 
-- [ ] **TASK-201: Tree-sitter Multi-Language Grammar Bindings**
+- [x] **TASK-201: Tree-sitter Multi-Language Grammar Bindings**
   - **Description:** Implement `TreeSitterParser` (`src/repopilot/ast/parser.py`) binding official Tree-sitter grammars for Python (with TS/Go extensible hooks).
   - **Acceptance Criteria:** Successfully parses syntax trees, extracts byte offsets, and identifies syntax errors on malformed source files.
 
-- [ ] **TASK-202: Symbol Table Extraction Engine**
+- [x] **TASK-202: Symbol Table Extraction Engine**
   - **Description:** Implement `SymbolTableBuilder` (`src/repopilot/ast/symbol_table.py`) traversing ASTs to catalog all classes, functions, methods, imports, and variables with fully qualified names.
   - **Acceptance Criteria:** 100% extraction of top-level and nested callable symbols across a 50-file sample repository.
 
-- [ ] **TASK-203: Directed Call-Graph & Blast-Radius Engine**
+- [x] **TASK-203: Directed Call-Graph & Blast-Radius Engine**
   - **Description:** Implement `CallGraphBuilder` (`src/repopilot/ast/call_graph.py`) mapping caller-to-callee dependencies using NetworkX or custom adjacency matrices.
   - **Acceptance Criteria:** Traverses reverse dependency edges to compute the exact list of downstream affected files when a target symbol signature changes.
 

@@ -1,5 +1,6 @@
 """AST and Code Intelligence Subsystem for RepoPilot."""
 
+from repopilot.ast.call_graph import CallGraphBuilder
 from repopilot.ast.models import (
     ASTParseResult,
     CallGraph,
@@ -12,10 +13,13 @@ from repopilot.ast.models import (
     SymbolInfo,
     SymbolType,
 )
+from repopilot.ast.parser import TreeSitterParser
+from repopilot.ast.symbol_table import SymbolTableBuilder
 
 __all__ = [
     "ASTParseResult",
     "CallGraph",
+    "CallGraphBuilder",
     "CallGraphEdge",
     "CallGraphNode",
     "CallSite",
@@ -23,5 +27,7 @@ __all__ = [
     "Position",
     "Range",
     "SymbolInfo",
+    "SymbolTableBuilder",
     "SymbolType",
+    "TreeSitterParser",
 ]
