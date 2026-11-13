@@ -1,0 +1,23 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: 'docs/**'
+
+ast-parser:
+  - changed-files:
+      - any-glob-to-any-file: 'src/repopilot/ast/**'
+
+code-rag:
+  - changed-files:
+      - any-glob-to-any-file: 'src/repopilot/rag/**'
+
+mcp-server:
+  - changed-files:
+      - any-glob-to-any-file: 'src/repopilot/mcp/**'
+
+agent-engine:
+  - changed-files:
+      - any-glob-to-any-file: 'src/repopilot/agents/**'
+
+frontend-ui:
+  - changed-files:
+      - any-glob-to-any-file: 'ui/**'
