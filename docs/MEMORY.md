@@ -15,8 +15,8 @@ RepoPilot has established its foundational architecture, product requirements, e
 
 ### 1.1 Phase Progress Dashboard
 - [x] **Phase 0:** Architectural Design & Core Documentation (PRD, Architecture, Rules, Design, Tasks, Memory)
-- [ ] **Phase 1:** Repository Scaffolding, Strict Tooling, and Domain Schemas (In Progress)
-- [ ] **Phase 2:** Tree-sitter AST Parser & Symbol Dependency Graph Builder
+- [x] **Phase 1:** Repository Scaffolding, Strict Tooling, and Domain Schemas (Completed)
+- [ ] **Phase 2:** Tree-sitter AST Parser & Symbol Dependency Graph Builder (Next Up)
 - [ ] **Phase 3:** Hybrid Code-RAG Engine (Qdrant + BM25 + FlashRank)
 - [ ] **Phase 4:** FastMCP Code Server & Dockerized Pytest Sandbox
 - [ ] **Phase 5:** LangGraph Multi-Agent State Engine & Self-Correction Feedback Loop
