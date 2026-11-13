@@ -10,15 +10,15 @@
 
 ## Phase 1: Repository Scaffolding, Strict Tooling, and Domain Schemas
 
-- [ ] **TASK-101: Project Packaging & Dependency Configuration**
+- [x] **TASK-101: Project Packaging & Dependency Configuration**
   - **Description:** Setup modern Python packaging via `pyproject.toml` (Poetry or Hatchling) configuring Python $\ge 3.11$, strict typing dependencies, and CLI entry points.
   - **Acceptance Criteria:** `poetry install` or `pip install -e .` completes cleanly with locked dependencies in isolated virtual environment.
 
-- [ ] **TASK-102: Linter, Formatter & Type-Checking Scaffolding**
+- [x] **TASK-102: Linter, Formatter & Type-Checking Scaffolding**
   - **Description:** Configure `ruff.toml` and `mypy.ini` enforcing line length 100, strict type-checking (`disallow_untyped_defs = true`, `disallow_any_generics = true`), and pre-commit hooks.
   - **Acceptance Criteria:** `ruff check .`, `ruff format --check .`, and `mypy --strict src/` return zero warnings or errors.
 
-- [ ] **TASK-103: Domain Schemas & Result Monads**
+- [x] **TASK-103: Domain Schemas & Result Monads**
   - **Description:** Implement immutable Pydantic v2 domain schemas (`src/repopilot/ast/models.py`, `src/repopilot/agents/state.py`) and generic `Result[T, E]` monad (`src/repopilot/core/result.py`).
   - **Acceptance Criteria:** Unit tests demonstrate serialization/deserialization and pattern matching over `Ok` and `Err` branches.
 
