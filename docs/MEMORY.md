@@ -14,14 +14,12 @@
 RepoPilot has established its foundational architecture, product requirements, engineering rulebook, and UI/UX design specifications. The project is positioned to solve enterprise-scale codebase modernization through deterministic abstract syntax tree (AST) reasoning, hybrid code retrieval, isolated sandbox test feedback, and self-healing LangGraph state machines.
 
 ### 1.1 Phase Progress Dashboard
-- [x] **Phase 0:** Architectural Design & Core Documentation (PRD, Architecture, Rules, Design, Tasks, Memory)
-- [x] **Phase 1:** Repository Scaffolding, Strict Tooling, and Domain Schemas (Completed)
-- [x] **Phase 2:** Tree-sitter AST Parser & Symbol Dependency Graph Builder (Completed)
-- [x] **Phase 3:** Hybrid Code-RAG Engine (Qdrant + BM25 + FlashRank) (Completed)
-- [ ] **Phase 4:** FastMCP Code Server & Dockerized Pytest Sandbox (Next Up)
-- [ ] **Phase 3:** Hybrid Code-RAG Engine (Qdrant + BM25 + FlashRank)
-- [ ] **Phase 4:** FastMCP Code Server & Dockerized Pytest Sandbox
-- [ ] **Phase 5:** LangGraph Multi-Agent State Engine & Self-Correction Feedback Loop
+- [x] **Phase 0:** Architectural Design & Core Documentation (PRD, Architecture, Rules, Design, Tasks, Memory - PR #1)
+- [x] **Phase 1:** Repository Scaffolding, Strict Tooling, and Domain Schemas (Completed - PR #2)
+- [x] **Phase 2:** Tree-sitter AST Parser & Symbol Dependency Graph Builder (Completed - PR #3)
+- [x] **Phase 3:** Hybrid Code-RAG Engine (Qdrant + BM25 + FlashRank) (Completed - PR #4)
+- [x] **Phase 4:** FastMCP Code Server & Dockerized Pytest Sandbox (Completed - PR #5)
+- [ ] **Phase 5:** LangGraph Multi-Agent State Engine & Self-Correction Feedback Loop (Next Up)
 - [ ] **Phase 6:** FastAPI SSE Gateway & Vue 3 Real-time Canvas
 - [ ] **Phase 7:** Benchmark Evaluations, Chaos Testing, and CI/CD Automation
 

@@ -72,3 +72,9 @@ repopilot = "repopilot.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/repopilot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"

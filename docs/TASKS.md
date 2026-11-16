@@ -62,19 +62,19 @@
 
 ## Phase 4: FastMCP Code Server & Dockerized Pytest Sandbox
 
-- [ ] **TASK-401: FastMCP Protocol Server Setup**
+- [x] **TASK-401: FastMCP Protocol Server Setup**
   - **Description:** Implement `FastMCPServer` (`src/repopilot/mcp/server.py`) using the official Python FastMCP SDK with STDIO and SSE transport support.
   - **Acceptance Criteria:** Exposes valid JSON-RPC 2.0 endpoints compliant with MCP specification and connectable from Claude Desktop / Cursor.
 
-- [ ] **TASK-402: Safe Local Tool Registry**
+- [x] **TASK-402: Safe Local Tool Registry**
   - **Description:** Implement `search_ast_symbols`, `read_file_range`, and `apply_unified_diff` with path canonicalization and directory traversal guards.
   - **Acceptance Criteria:** Invocations outside target repository root are rejected with typed security errors.
 
-- [ ] **TASK-403: Ephemeral Docker Test Sandbox**
+- [x] **TASK-403: Ephemeral Docker Test Sandbox**
   - **Description:** Implement `DockerSandboxRunner` (`src/repopilot/sandbox/runner.py`) using `docker-py` to spin up isolated containers with CPU/memory limits and timeout guards.
   - **Acceptance Criteria:** Executes Pytest suite inside ephemeral container; captures stdout, stderr, and exit codes; guarantees container destruction on exit.
 
-- [ ] **TASK-404: Pytest & JUnit XML Error Parser**
+- [x] **TASK-404: Pytest & JUnit XML Error Parser**
   - **Description:** Implement `PytestErrorParser` (`src/repopilot/sandbox/pytest_parser.py`) extracting failing test names, assertion messages, and traceback line numbers.
   - **Acceptance Criteria:** Emits structured Pydantic failure models ready for consumption by reflection agents.
 

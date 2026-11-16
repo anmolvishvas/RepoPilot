@@ -36,6 +36,11 @@ class CallGraphBuilder:
                     call_site_line=call_site.line_number,
                 )
 
+    def build(self, parse_results: list[ASTParseResult]) -> None:
+        """Register multiple AST parse results into the call graph."""
+        for pr in parse_results:
+            self.add_parse_result(pr)
+
     def add_symbol(self, symbol: SymbolInfo) -> None:
         """Add a symbol node to the graph."""
         self._symbols[symbol.id] = symbol
