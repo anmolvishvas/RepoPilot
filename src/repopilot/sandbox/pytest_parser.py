@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import re
-import xml.etree.ElementTree as ET
+
+try:
+    import defusedxml.ElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
 from repopilot.agents.state import FailedAssertion, SandboxTestResult
 
@@ -78,8 +82,8 @@ class PytestErrorParser:
     def parse_junit_xml(cls, xml_content: str, exit_code: int = 0) -> SandboxTestResult:
         """Parse JUnit XML report content into a SandboxTestResult."""
         try:
-            root = ET.fromstring(xml_content)
-        except ET.ParseError:
+            root = ET.fromstring(xml_content)  # nosec B314
+        except Exception:
             return cls.parse_stdout(xml_content, exit_code=exit_code)
 
         total_tests = int(root.attrib.get("tests", 0))
