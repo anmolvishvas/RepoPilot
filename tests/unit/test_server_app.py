@@ -107,9 +107,7 @@ def test_approve_migration_landing(tmp_path: Path) -> None:
     task_id = resp.json()["task_id"]
 
     # Inject patch to state
-    patch_str = (
-        "--- a/hello.py\n+++ b/hello.py\n@@ -1,2 +1,2 @@\n def run():\n-    return 1\n+    return 2\n"
-    )
+    patch_str = "--- a/hello.py\n+++ b/hello.py\n@@ -1,2 +1,2 @@\n def run():\n-    return 1\n+    return 2\n"
     patch_hunk = DiffHunk(file_path="hello.py", diff_text=patch_str)
     app.state.tasks[task_id] = app.state.tasks[task_id].model_copy(update={"patches": [patch_hunk]})
 
