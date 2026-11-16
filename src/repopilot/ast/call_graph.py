@@ -37,9 +37,23 @@ class CallGraphBuilder:
                 )
 
     def build(self, parse_results: list[ASTParseResult]) -> None:
-        """Register multiple AST parse results into the call graph."""
+        """Register multiple AST parse results into the call graph in two passes."""
+        # Pass 1: Register all symbols across all files first so symbol table is complete
         for pr in parse_results:
-            self.add_parse_result(pr)
+            for symbol in pr.symbols:
+                self.add_symbol(symbol)
+
+        # Pass 2: Resolve all call site edges now that all callees are discoverable
+        for pr in parse_results:
+            for call_site in pr.call_sites:
+                target_id = self._resolve_callee(call_site.callee_name, call_site.caller_symbol_id)
+                if target_id and target_id != call_site.caller_symbol_id:
+                    self.add_call_edge(
+                        source_id=call_site.caller_symbol_id,
+                        target_id=target_id,
+                        is_awaited=call_site.is_awaited,
+                        call_site_line=call_site.line_number,
+                    )
 
     def add_symbol(self, symbol: SymbolInfo) -> None:
         """Add a symbol node to the graph."""
