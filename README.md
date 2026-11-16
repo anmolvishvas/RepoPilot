@@ -4,9 +4,10 @@
 
 [![CI Pipeline](https://github.com/anmolvishvas/RepoPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/anmolvishvas/RepoPilot/actions/workflows/ci.yml)
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
-[![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen.svg)](https://github.com/anmolvishvas/RepoPilot)
+[![Coverage](https://img.shields.io/badge/coverage-92%25%2B-brightgreen.svg)](https://github.com/anmolvishvas/RepoPilot)
 [![Type Checking: Mypy Strict](https://img.shields.io/badge/mypy-strict-blueviolet.svg)](https://mypy.readthedocs.io/)
 [![Linter: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Security: Bandit](https://img.shields.io/badge/security-bandit%20clean-brightgreen.svg)](https://github.com/PyCQA/bandit)
 [![MCP Compliant](https://img.shields.io/badge/MCP-FastMCP%20v1.0-orange.svg)](https://github.com/jlowin/fastmcp)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -21,7 +22,7 @@ Modernizing enterprise codebases—such as **sync-to-async migrations**, **frame
 2. **Retrieves** context with **Hybrid Code-RAG** combining Qdrant dense vector embeddings, Rank-BM25 sparse lexical search, and FlashRank cross-encoder reranking.
 3. **Exposes** codebase capabilities through a standardized **FastMCP** server.
 4. **Executes** multi-agent migration workflows in **LangGraph**, generating unified diffs, running test suites in **ephemeral Docker sandboxes**, and **self-healing** runtime regressions iteratively.
-5. **Surfaces** changes on an interactive **Vue 3 / Nuxt 3 Reactive Canvas** for human-in-the-loop review and approval.
+5. **Surfaces** changes on an interactive **Vue 3 Reactive Canvas** for human-in-the-loop review and approval.
 
 ---
 
@@ -87,8 +88,8 @@ The complete architectural specifications, design documents, and operational rul
 - **Tree-sitter AST Symbol & Call-Graph Resolution:** Extracts 100% of callable symbols, imports, and cross-file references. Computes exact blast-radius matrices before touching a single line of code.
 - **Syntactic Hybrid Code-RAG:** Chunks code strictly at AST node boundaries (functions, classes). Melds dense vector search with Rank-BM25 sparse search via Reciprocal Rank Fusion ($k=60$) and reranks with CPU-optimized FlashRank ($<150$ms).
 - **Standardized FastMCP Code Server:** Exposes safe, validated tools (`search_ast_symbols`, `read_file_range`, `apply_unified_diff`, `run_isolated_tests`) to any MCP client (Claude Desktop, Cursor, Antigravity).
-- **Self-Healing LangGraph Feedback Loop:** Synthesizes code, validates syntax with Tree-sitter, applies diffs to a staging git worktree, and runs tests in disposable Docker containers. If tests fail, the Critic agent parses the traceback and automatically coordinates repairs.
-- **Real-Time Vue 3 / Nuxt 3 Cockpit:** Streams execution traces via Server-Sent Events (SSE), provides side-by-side syntax-highlighted diffs with Monaco, and renders interactive D3 dependency mini-maps.
+- **Self-Healing LangGraph Feedback Loop:** Synthesizes code, validates syntax with Tree-sitter, applies diffs to a staging worktree, and runs tests in disposable Docker containers. If tests fail, the Critic agent parses the traceback and automatically coordinates repairs.
+- **Real-Time Vue 3 Cockpit Canvas:** Streams execution traces via Server-Sent Events (SSE), provides side-by-side syntax-highlighted diffs, and renders interactive SVG dependency blast-radius mini-maps.
 
 ---
 
@@ -96,60 +97,148 @@ The complete architectural specifications, design documents, and operational rul
 
 ### Prerequisites
 - **Python 3.11+**
-- **Docker Engine** (running locally for test sandboxing)
-- **Node.js 18+** (for the Nuxt 3 UI dashboard)
-- **uv** or **Poetry** (recommended Python package manager)
+- **Node.js 18+** & `npm`
+- **Docker Engine** *(Optional — RepoPilot automatically falls back to secure subprocess test execution if Docker is inactive)*
 
-### 1. Clone & Install Dependencies
+### 1. Clone & Set Up Environment
+
 ```bash
-# Clone the repository
 git clone https://github.com/anmolvishvas/RepoPilot.git
 cd RepoPilot
 
-# Install Python dependencies using uv (or poetry install)
-uv pip install -e ".[dev]"
+# Create and activate virtual environment
+python -m venv .venv
+
+# On Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# On Linux/macOS:
+source .venv/bin/activate
+
+# Upgrade pip and install RepoPilot in editable mode
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+### 2. Verify Code Quality & Tests
+
+```bash
+# Run all 103 unit, benchmark, and sandbox chaos tests with >= 90% coverage
+pytest -v --cov=src --cov-fail-under=90
 
 # Verify strict type-checking and linting
 ruff check .
-mypy --strict src/
+ruff format --check .
+mypy --strict src/ tests/
+bandit -r src/
 ```
 
-### 2. Configure Environment
+---
+
+## 🚀 How to Use RepoPilot on Real Projects
+
+RepoPilot can modernize **any real Python repository** on your computer. Follow these steps:
+
+### Method 1: Using the REST API & Real-Time Cockpit
+
+#### Step 1: Start the RepoPilot API Gateway
 ```bash
-cp .env.example .env
-# Edit .env with your LLM API Keys (OpenAI, Anthropic, or Gemini)
-# export OPENAI_API_KEY="your-key"
-# export LANGFUSE_PUBLIC_KEY="your-key" (optional)
+repopilot server --port 8080
+```
+> [!TIP]
+> RepoPilot runs on port `8080` (or `8000`). Interactive Swagger documentation is instantly available at **http://127.0.0.1:8080/docs**.
+
+#### Step 2: Start the Vue 3 Cockpit UI
+In a second terminal window:
+```bash
+cd ui
+npm install
+npm run dev
+```
+Open **http://localhost:5173** (or `:3000`) in your browser to access the dark-mode cockpit.
+
+#### Step 3: Trigger a Migration on Your App
+Open **http://127.0.0.1:8080/docs** in your browser, expand **`POST /api/v1/migrations`**, click **Try it out**, and provide your target repository path:
+
+```json
+{
+  "repo_path": "C:/path/to/your/legacy-app",
+  "recipe": "sync-to-async",
+  "max_retries": 3
+}
 ```
 
-### 3. Build Sandbox Docker Image
-```bash
-docker build -f Dockerfile.sandbox -t repopilot-sandbox:latest .
+Or trigger it directly from your terminal using cURL or PowerShell:
+
+```powershell
+$body = @{
+    repo_path = "C:/path/to/your/legacy-app"
+    recipe = "sync-to-async"
+    max_retries = 3
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/v1/migrations" -Method Post -Body $body -ContentType "application/json"
 ```
 
-### 4. Launch the FastMCP Server
-```bash
-# Run FastMCP code server over STDIO
-python -m repopilot.mcp.server
+#### Step 4: Watch the Autonomous Loop
+In the background, RepoPilot will:
+1. **Index AST Call-Graph:** Discovers symbol dependencies and computes the blast radius.
+2. **Synthesize Patches:** Generates unified diffs according to topological migration order.
+3. **Execute Isolated Tests:** Runs `pytest` inside an ephemeral container or secure subprocess.
+4. **Self-Heal Regressions:** If any test fails, the Critic agent diagnoses the root cause (e.g., missing `await` or broken import), re-prompts the Synthesizer, and verifies the repair.
+5. **Halt at Human Review:** Pauses execution at a safe breakpoint awaiting your confirmation.
+
+#### Step 5: Approve & Land Patches
+Review the generated diffs in the cockpit UI or Swagger UI. Once satisfied, send approval to land the changes to disk:
+
+```powershell
+$approval = @{
+    approved = $true
+    operator = "Lead Engineer"
+    comment = "Verified async conversion passes all tests."
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/v1/migrations/<YOUR_TASK_ID>/approval" -Method Post -Body $approval -ContentType "application/json"
 ```
 
-### 5. Run an Autonomous Migration
+---
+
+### Method 2: Using Inside Cursor or Claude Desktop (FastMCP)
+
+RepoPilot implements the open **Model Context Protocol (MCP)**, allowing AI assistants like Cursor, Claude Desktop, and Antigravity to use RepoPilot's AST analysis and sandboxed test execution directly inside your editor.
+
+#### Step 1: Start the MCP Server
 ```bash
-# Execute an autonomous sync-to-async migration on a target repo
-repopilot migrate \
-  --repo-path /path/to/legacy-repo \
-  --recipe sync-to-async \
-  --test-cmd "pytest tests/" \
-  --max-retries 3
+repopilot mcp
 ```
 
-### 6. Launch the Real-Time Web Canvas
-```bash
-# In a separate terminal, launch the FastAPI SSE gateway & Nuxt frontend
-repopilot server --port 8000 &
-cd ui && npm install && npm run dev
+#### Step 2: Configure Claude Desktop / Cursor
+Add RepoPilot to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "repopilot": {
+      "command": "python",
+      "args": ["-m", "repopilot.mcp.server"],
+      "cwd": "C:/Users/DELL/Desktop/RepoPilot"
+    }
+  }
+}
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser to inspect real-time agent execution traces, interactive unified diffs, and the dependency blast-radius mini-map.
+
+Now inside Cursor or Claude Desktop, you can prompt:
+> *"Inspect the AST call graph of my app using RepoPilot tools, find all callers of `fetch_user`, and migrate them to async."*
+
+---
+
+## 🌐 100% Free Live Cloud Deployment
+
+You can deploy RepoPilot live with zero hosting costs:
+
+| Component | Free Platform | Setup Summary |
+| :--- | :--- | :--- |
+| **Frontend UI** | [Vercel](https://vercel.com) / [Cloudflare Pages](https://pages.cloudflare.com) | Point Git root directory to `ui/`, build command `npm run build`, output `dist`. Unlimited free bandwidth & SSL. |
+| **Backend API** | [Render](https://render.com) / [Hugging Face Spaces](https://huggingface.co/spaces) | Render Web Service: build command `pip install .`, start command `uvicorn repopilot.server.app:app --host 0.0.0.0 --port $PORT`. |
 
 ---
 
