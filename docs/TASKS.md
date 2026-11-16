@@ -102,23 +102,23 @@
 
 ## Phase 6: FastAPI SSE Gateway & Vue 3 Real-time Canvas
 
-- [ ] **TASK-601: FastAPI Server-Sent Events (SSE) Gateway**
+- [x] **TASK-601: FastAPI Server-Sent Events (SSE) Gateway**
   - **Description:** Implement asynchronous streaming routes (`src/repopilot/server/routes_stream.py`) broadcasting agent thought streams and tool events.
   - **Acceptance Criteria:** Clients receive real-time JSON event packets with $<50$ms server dispatch latency.
 
-- [ ] **TASK-602: Vue 3 / Nuxt 3 Cockpit Scaffolding**
+- [x] **TASK-602: Vue 3 / Nuxt 3 Cockpit Scaffolding**
   - **Description:** Initialize Nuxt 3 project in `ui/` with Tailwind CSS, dark-mode tokens, and Pinia state management.
   - **Acceptance Criteria:** Clean build with responsive 3-column cockpit layout.
 
-- [ ] **TASK-603: Real-Time Execution Trace & Terminal Component**
+- [x] **TASK-603: Real-Time Execution Trace & Terminal Component**
   - **Description:** Implement `ExecutionTrace.vue` streaming SSE events with state badges, tool call accordions, and ANSI log rendering.
   - **Acceptance Criteria:** Auto-scrolls and color-codes test passes/failures in real time.
 
-- [ ] **TASK-604: Interactive Split-Screen Unified Diff Viewer**
+- [x] **TASK-604: Interactive Split-Screen Unified Diff Viewer**
   - **Description:** Implement `UnifiedDiffViewer.vue` rendering side-by-side syntax-highlighted diffs with inline AST explanation breadcrumbs.
   - **Acceptance Criteria:** Renders multi-file diffs with line-level addition/deletion highlighting and operator approval buttons.
 
-- [ ] **TASK-605: AST Dependency Mini-Map**
+- [x] **TASK-605: AST Dependency Mini-Map**
   - **Description:** Implement `DependencyMiniMap.vue` rendering interactive D3.js or SVG node-link diagrams of affected symbols.
   - **Acceptance Criteria:** Clicking an AST node centers the diff viewer directly on that file's changes.
 
