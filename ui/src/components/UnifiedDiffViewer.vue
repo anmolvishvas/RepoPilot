@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import type { DiffHunk } from "../types";
-import { FileCode2, CheckCircle2, XCircle, Sparkles, GitCommit } from "lucide-vue-next";
+import { FileCode2, CheckCircle2, XCircle, Sparkles, GitCommit, Search } from "lucide-vue-next";
 
 const props = defineProps<{
   patches: DiffHunk[];
@@ -16,6 +16,14 @@ const emit = defineEmits<{
 }>();
 
 const selectedPatchIndex = ref(0);
+const patchSearch = ref("");
+
+// Filter patches based on search input
+const filteredPatches = computed(() => {
+  if (!patchSearch.value.trim()) return props.patches;
+  const q = patchSearch.value.toLowerCase();
+  return props.patches.filter((p) => p.file_path.toLowerCase().includes(q));
+});
 
 // Sync with activeFile if passed from parent
 watch(
@@ -29,7 +37,7 @@ watch(
   }
 );
 
-const activePatch = computed(() => props.patches[selectedPatchIndex.value]);
+const activePatch = computed(() => props.patches[selectedPatchIndex.value] || props.patches[0]);
 
 interface DiffLine {
   type: "header" | "add" | "del" | "ctx";
@@ -86,7 +94,9 @@ const stats = computed(() => {
         </div>
         <div>
           <h3 class="font-semibold text-xs text-slate-100 uppercase tracking-wider">Unified Patch Diff</h3>
-          <p class="text-[10px] text-slate-400 font-mono">AST-Validated Syntactic Transformations</p>
+          <p class="text-[10px] text-slate-400 font-mono">
+            Showing patch {{ selectedPatchIndex + 1 }} of {{ patches.length }}
+          </p>
         </div>
       </div>
 
@@ -100,26 +110,43 @@ const stats = computed(() => {
       </div>
     </div>
 
-    <!-- Multi-File Tabs Strip -->
-    <div class="bg-slate-950 border-b border-slate-800/80 px-2 py-1.5 flex items-center space-x-1.5 overflow-x-auto">
-      <button
-        v-for="(p, idx) in patches"
-        :key="idx"
-        @click="selectedPatchIndex = idx; emit('selectFile', p.file_path)"
-        :class="selectedPatchIndex === idx
-          ? 'bg-slate-850 text-indigo-300 border-indigo-500/40 shadow-sm'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border-transparent'"
-        class="px-3 py-1.5 rounded-lg border text-xs font-mono flex items-center space-x-2 shrink-0 transition-all duration-150"
-      >
-        <span class="w-1.5 h-1.5 rounded-full" :class="selectedPatchIndex === idx ? 'bg-indigo-400' : 'bg-slate-600'"></span>
-        <span class="truncate">{{ p.file_path.split('/').pop() }}</span>
-      </button>
+    <!-- Search & Multi-File Tabs Strip -->
+    <div class="bg-slate-950 border-b border-slate-800/80 p-2 flex items-center space-x-2 overflow-hidden">
+      <div class="relative w-44 shrink-0">
+        <Search class="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2" />
+        <input
+          v-model="patchSearch"
+          type="text"
+          placeholder="Search patches..."
+          class="w-full pl-7 pr-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/40"
+        />
+      </div>
+
+      <!-- Scrollable Tab Strip -->
+      <div class="flex items-center space-x-1.5 overflow-x-auto flex-1 py-0.5">
+        <button
+          v-for="(p, idx) in filteredPatches.slice(0, 30)"
+          :key="idx"
+          @click="selectedPatchIndex = patches.indexOf(p); emit('selectFile', p.file_path)"
+          :class="patches[selectedPatchIndex]?.file_path === p.file_path
+            ? 'bg-slate-850 text-indigo-300 border-indigo-500/40 shadow-sm'
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border-transparent'"
+          class="px-2.5 py-1 rounded-lg border text-xs font-mono flex items-center space-x-1.5 shrink-0 transition-all duration-150"
+        >
+          <span class="w-1.5 h-1.5 rounded-full" :class="patches[selectedPatchIndex]?.file_path === p.file_path ? 'bg-indigo-400' : 'bg-slate-600'"></span>
+          <span class="truncate max-w-[140px]">{{ p.file_path.split('/').pop() }}</span>
+        </button>
+
+        <span v-if="filteredPatches.length > 30" class="text-[10px] text-slate-500 font-mono px-2 shrink-0">
+          +{{ filteredPatches.length - 30 }} more
+        </span>
+      </div>
     </div>
 
     <!-- Main Diff Body -->
     <div v-if="patches.length === 0" class="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 space-y-2">
       <GitCommit class="w-8 h-8 text-slate-600 animate-pulse" />
-      <p class="text-xs font-mono">No patch diffs synthesized yet.</p>
+      <p class="text-xs font-mono">No patch diffs synthesized yet for this task.</p>
     </div>
 
     <div v-else class="flex-1 flex flex-col overflow-hidden">
@@ -129,16 +156,16 @@ const stats = computed(() => {
         <div class="text-xs">
           <span class="font-semibold text-indigo-300">AST Modernization Rationale:</span>
           <span class="text-slate-300 ml-1 leading-relaxed">{{ activePatch.explanation }}</span>
-          <div v-if="activePatch.target_symbol" class="mt-1 flex items-center space-x-1.5 text-[11px] font-mono text-slate-400">
-            <span class="text-slate-500">Target AST Symbol:</span>
-            <code class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-indigo-300">{{ activePatch.target_symbol }}</code>
+          <div class="mt-1 flex items-center space-x-2 text-[11px] font-mono text-slate-400">
+            <span class="text-slate-500">File:</span>
+            <code class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-indigo-300">{{ activePatch.file_path }}</code>
           </div>
         </div>
       </div>
 
       <!-- Diff Code View -->
       <div class="flex-1 overflow-y-auto mt-3 p-3 font-mono text-xs bg-slate-950/70 select-text leading-relaxed">
-        <div class="border border-slate-855 rounded-lg overflow-hidden bg-slate-950">
+        <div class="border border-slate-850 rounded-lg overflow-hidden bg-slate-950">
           <table class="w-full border-collapse">
             <tbody>
               <tr
