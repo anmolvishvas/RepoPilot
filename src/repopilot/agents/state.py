@@ -76,6 +76,11 @@ class SandboxTestResult(BaseModel):
         """Return True if the test suite succeeded with zero exit code."""
         return self.exit_code == 0 and self.failed_tests == 0
 
+    @property
+    def is_success(self) -> bool:
+        """Alias for passed."""
+        return self.passed
+
 
 class ReflectionFeedback(BaseModel):
     """Guidance synthesized by the Critic agent during self-healing cycles."""
