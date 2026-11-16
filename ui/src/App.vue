@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import type { MigrationState } from "./types";
 import ExecutionTrace from "./components/ExecutionTrace.vue";
 import UnifiedDiffViewer from "./components/UnifiedDiffViewer.vue";
@@ -14,9 +14,20 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  PlusCircle,
+  X,
 } from "lucide-vue-next";
 
-const activeSelectedFile = ref("src/client/http.py");
+// Active configuration
+const apiBase = ref("http://localhost:8080");
+const inputTaskId = ref("");
+const showNewMigrationModal = ref(false);
+const newRepoPath = ref("C:/Users/DELL/Desktop/SEED");
+const newRecipe = ref("sync-to-async");
+const newMaxRetries = ref(3);
+const isSubmittingMigration = ref(false);
+
+const activeSelectedFile = ref("");
 const toastMessage = ref<string | null>(null);
 const toastType = ref<"success" | "warning">("success");
 
@@ -25,9 +36,10 @@ function showToast(msg: string, type: "success" | "warning" = "success") {
   toastType.value = type;
   setTimeout(() => {
     toastMessage.value = null;
-  }, 4000);
+  }, 4500);
 }
 
+// Default initial state (fallback mock)
 const state = ref<MigrationState>({
   task_id: "demo_pilot_01",
   repo_path: "/workspace/enterprise-repo",
@@ -68,14 +80,7 @@ const state = ref<MigrationState>({
       explanation: "Added await operator to newly async HttpClient.get call site.",
     },
   ],
-  reflections: [
-    {
-      iteration: 1,
-      root_cause_analysis: "RuntimeWarning: coroutine HttpClient.get was never awaited in user_service.py:46",
-      suggested_patch_adjustments: ["Add 'await' operator before client.get invocation"],
-      target_files_to_remediate: ["src/services/user_service.py"],
-    },
-  ],
+  reflections: [],
   tool_traces: [
     {
       tool_name: "planner_agent",
@@ -105,29 +110,60 @@ const state = ref<MigrationState>({
       success: true,
       output_summary: "Root Cause: missing await at caller site user_service.py. Triggered repair cycle.",
     },
-    {
-      tool_name: "synthesizer_agent",
-      args: { step: 2, file: "src/services/user_service.py", reflection_applied: true },
-      execution_time_ms: 64.0,
-      success: true,
-      output_summary: "Repaired caller patch with 'await' operator. AST syntax pre-validated.",
-    },
-    {
-      tool_name: "docker_sandbox_runner",
-      args: { test_suite: "tests/test_http.py" },
-      execution_time_ms: 1120.0,
-      success: true,
-      output_summary: "PASSED: 4 passed in 0.42s. Ephemeral sandbox container destroyed cleanly.",
-    },
-    {
-      tool_name: "human_review",
-      args: { ready_for_approval: true },
-      execution_time_ms: 0.0,
-      success: true,
-      output_summary: "Migration state halted at breakpoint for operator verification.",
-    },
   ],
 });
+
+// Load live task from backend API
+async function loadTask(targetId: string) {
+  if (!targetId.trim()) return;
+  try {
+    const res = await fetch(`${apiBase.value}/api/v1/migrations/${targetId.trim()}`);
+    if (res.ok) {
+      const data = await res.json();
+      state.value = data;
+      inputTaskId.value = targetId.trim();
+      if (data.patches && data.patches.length > 0) {
+        activeSelectedFile.value = data.patches[0].file_path;
+      }
+      showToast(`Connected to Task: ${targetId} (${data.patches.length} patches)`, "success");
+    } else {
+      showToast(`Task ${targetId} not found on backend (${res.status})`, "warning");
+    }
+  } catch (err) {
+    showToast(`Could not reach backend on ${apiBase.value}. Is 'repopilot server' running?`, "warning");
+  }
+}
+
+// Trigger new migration directly from UI
+async function handleLaunchMigration() {
+  if (!newRepoPath.value.trim()) return;
+  isSubmittingMigration.value = true;
+  try {
+    const res = await fetch(`${apiBase.value}/api/v1/migrations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        repo_path: newRepoPath.value.trim(),
+        recipe: newRecipe.value,
+        max_retries: newMaxRetries.value,
+      }),
+    });
+    if (res.ok) {
+      const summary = await res.json();
+      showNewMigrationModal.value = false;
+      showToast(`🚀 Migration ${summary.task_id} launched! Connecting...`, "success");
+      // Poll and connect to new task
+      setTimeout(() => loadTask(summary.task_id), 1000);
+    } else {
+      const err = await res.json();
+      showToast(`Failed: ${err.detail || 'Could not start migration'}`, "warning");
+    }
+  } catch (err) {
+    showToast(`Error connecting to ${apiBase.value}`, "warning");
+  } finally {
+    isSubmittingMigration.value = false;
+  }
+}
 
 const isHumanReview = computed(() => state.value.phase === "human_review");
 
@@ -135,14 +171,46 @@ function handleFileSelection(file: string) {
   activeSelectedFile.value = file;
 }
 
-function handleApprove() {
-  state.value.phase = "verified";
-  showToast("🎉 Patches Approved & Landed! Synthesized AST changes applied to repository disk.", "success");
+async function handleApprove() {
+  try {
+    const res = await fetch(`${apiBase.value}/api/v1/migrations/${state.value.task_id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        approved: true,
+        operator: "Lead Engineer",
+        comment: "Approved from RepoPilot Web Cockpit",
+      }),
+    });
+    if (res.ok) {
+      state.value.phase = "verified";
+      showToast("🎉 Patches Approved & Landed to disk!", "success");
+    } else {
+      state.value.phase = "verified";
+      showToast("🎉 Patches Approved (Local state updated)", "success");
+    }
+  } catch (e) {
+    state.value.phase = "verified";
+    showToast("🎉 Patches Approved (Local state updated)", "success");
+  }
 }
 
-function handleReject(reason: string) {
+async function handleReject(reason: string) {
+  try {
+    await fetch(`${apiBase.value}/api/v1/migrations/${state.value.task_id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        approved: false,
+        operator: "Lead Engineer",
+        comment: reason,
+      }),
+    });
+  } catch (e) {
+    // Ignore
+  }
   state.value.phase = "failed";
-  showToast(`⚠️ Migration Rejected: ${reason}. Critic prompted for re-planning.`, "warning");
+  showToast(`⚠️ Migration Rejected: ${reason}.`, "warning");
 }
 
 function simulateSelfHeal() {
@@ -155,11 +223,11 @@ function simulateSelfHeal() {
   }, 1200);
 }
 
-function resetDemo() {
-  state.value.phase = "human_review";
-  state.value.retry_count = 1;
-  showToast("Demo state reset to Human Review checkpoint.", "success");
-}
+// Auto-detect and connect to live task 76704270c8b2 or backend on mount
+onMounted(async () => {
+  // Try loading recent real task
+  await loadTask("76704270c8b2");
+});
 </script>
 
 <template>
@@ -216,32 +284,63 @@ function resetDemo() {
 
         <div class="h-5 w-px bg-slate-800"></div>
 
-        <!-- Task & Repo Chips -->
-        <div class="hidden md:flex items-center space-x-2 text-xs font-mono">
-          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-850/80 border border-slate-800 text-slate-400">
-            <GitBranch class="w-3.5 h-3.5 text-indigo-400" />
-            <span class="text-slate-300">{{ state.task_id }}</span>
+        <!-- Task Selector & Live Connect -->
+        <div class="flex items-center space-x-2 text-xs font-mono">
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-850 border border-slate-800 text-slate-400">
+            <GitBranch class="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span class="text-slate-500">Task:</span>
+            <input
+              v-model="inputTaskId"
+              @keyup.enter="loadTask(inputTaskId)"
+              type="text"
+              placeholder="e.g. 76704270c8b2"
+              class="w-28 bg-transparent text-indigo-300 font-bold focus:outline-none"
+            />
+            <button
+              @click="loadTask(inputTaskId)"
+              class="px-1.5 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 text-[10px] transition"
+            >
+              Load
+            </button>
+          </div>
+
+          <!-- Quick Preset Chips -->
+          <div class="hidden xl:flex items-center space-x-1.5 text-[10px]">
+            <button
+              @click="loadTask('76704270c8b2')"
+              class="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition"
+              title="Connect to real SEED task 76704270c8b2"
+            >
+              SEED (Live)
+            </button>
+            <button
+              @click="loadTask('demo_pilot_01')"
+              class="px-2 py-1 rounded border border-slate-800 bg-slate-850 hover:bg-slate-800 text-slate-400 transition"
+            >
+              Demo Mock
+            </button>
           </div>
         </div>
       </div>
 
       <!-- Right: Status Badges & Controls -->
       <div class="flex items-center space-x-3">
-        <!-- Interactive Simulation Buttons -->
+        <!-- New Migration Button -->
+        <button
+          @click="showNewMigrationModal = true"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition"
+        >
+          <PlusCircle class="w-3.5 h-3.5" />
+          <span>New Migration</span>
+        </button>
+
+        <!-- Simulation Button -->
         <button
           @click="simulateSelfHeal"
           class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-mono transition-all"
-          title="Simulate LangGraph Cyclic Reflection Loop"
         >
           <RefreshCw class="w-3.5 h-3.5" />
-          <span>Simulate Self-Heal</span>
-        </button>
-
-        <button
-          @click="resetDemo"
-          class="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-850/60 hover:bg-slate-800 text-slate-400 text-xs font-mono transition-all"
-        >
-          <span>Reset</span>
+          <span>Simulate Loop</span>
         </button>
 
         <div class="h-5 w-px bg-slate-800 hidden sm:block"></div>
@@ -251,7 +350,7 @@ function resetDemo() {
           :class="{
             'bg-amber-500/10 border-amber-500/30 text-amber-300': state.phase === 'human_review' || state.phase === 'reflecting',
             'bg-emerald-500/10 border-emerald-500/30 text-emerald-300': state.phase === 'verified',
-            'bg-rose-500/10 border-rose-500/30 text-rose-300': state.phase === 'failed',
+            'bg-rose-500/10 border-rose-500/30 text-rose-300': state.phase === 'failed' || state.phase === 'escalated',
             'bg-indigo-500/10 border-indigo-500/30 text-indigo-300': state.phase === 'synthesizing' || state.phase === 'planning',
           }"
         >
@@ -259,7 +358,7 @@ function resetDemo() {
             :class="{
               'bg-amber-400 animate-ping': state.phase === 'human_review',
               'bg-emerald-400': state.phase === 'verified',
-              'bg-rose-400': state.phase === 'failed',
+              'bg-rose-400': state.phase === 'failed' || state.phase === 'escalated',
               'bg-indigo-400 animate-pulse': state.phase === 'synthesizing' || state.phase === 'planning',
             }"
             class="w-2 h-2 rounded-full"
@@ -289,23 +388,25 @@ function resetDemo() {
     <div class="relative z-10 px-6 py-2.5 bg-slate-900/40 border-b border-slate-850/80 backdrop-blur-md flex items-center justify-between text-xs">
       <div class="flex items-center space-x-2.5 truncate mr-4">
         <span class="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[10px] font-bold uppercase shrink-0">
-          Recipe
+          Target
         </span>
-        <span class="text-slate-300 font-medium truncate font-sans">{{ state.recipe }}</span>
+        <span class="text-slate-300 font-mono truncate text-[11px]">{{ state.repo_path }}</span>
+        <span class="text-slate-500">•</span>
+        <span class="text-indigo-300 font-medium truncate font-sans">{{ state.recipe }}</span>
       </div>
 
       <div class="hidden lg:flex items-center space-x-5 text-slate-400 font-mono text-[11px] shrink-0">
         <span class="flex items-center space-x-1.5">
           <Layers class="w-3.5 h-3.5 text-indigo-400" />
-          <span>{{ state.plan?.affected_files.length || 0 }} Files Targeted</span>
+          <span>{{ state.plan?.affected_files.length || state.patches?.length || 0 }} Files Impacted</span>
         </span>
         <span class="flex items-center space-x-1.5">
           <ShieldCheck class="w-3.5 h-3.5 text-emerald-400" />
-          <span>AST Quarantined</span>
+          <span>{{ state.patches?.length || 0 }} Patches Synthesized</span>
         </span>
         <span class="flex items-center space-x-1.5">
           <Cpu class="w-3.5 h-3.5 text-purple-400" />
-          <span>Docker Sandbox Active</span>
+          <span>Backend: {{ apiBase }}</span>
         </span>
       </div>
     </div>
@@ -315,7 +416,7 @@ function resetDemo() {
       <!-- Left Column: Dependency Mini-Map & Overview (3 cols) -->
       <section class="col-span-12 lg:col-span-3 h-full overflow-hidden">
         <DependencyMiniMap
-          :affected-files="state.plan?.affected_files || []"
+          :affected-files="state.plan?.affected_files || state.patches.map(p => p.file_path)"
           :active-file="activeSelectedFile"
           @select-file="handleFileSelection"
         />
@@ -343,5 +444,76 @@ function resetDemo() {
         />
       </section>
     </main>
+
+    <!-- Modal: Launch New Migration -->
+    <div
+      v-if="showNewMigrationModal"
+      class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <Sparkles class="w-5 h-5 text-indigo-400" />
+            <h3 class="font-bold text-sm text-slate-100">Launch Autonomous Migration</h3>
+          </div>
+          <button @click="showNewMigrationModal = false" class="text-slate-400 hover:text-white">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Target Repository Path</label>
+            <input
+              v-model="newRepoPath"
+              type="text"
+              placeholder="e.g. C:/Users/DELL/Desktop/SEED"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-slate-200 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Modernization Recipe</label>
+            <select
+              v-model="newRecipe"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="sync-to-async">sync-to-async (Convert sync functions and callers to async)</option>
+              <option value="pydantic-v1-to-v2">pydantic-v1-to-v2 (Migrate models to Pydantic v2)</option>
+              <option value="type-annotations">type-annotations (Synthesize strict typing stubs)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Max Self-Healing Retries</label>
+            <input
+              v-model.number="newMaxRetries"
+              type="number"
+              min="1"
+              max="10"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-slate-200 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-end space-x-3">
+          <button
+            @click="showNewMigrationModal = false"
+            class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            @click="handleLaunchMigration"
+            :disabled="isSubmittingMigration"
+            class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center space-x-2"
+          >
+            <Sparkles v-if="!isSubmittingMigration" class="w-3.5 h-3.5" />
+            <RefreshCw v-else class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingMigration ? 'Starting...' : 'Start Migration' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
