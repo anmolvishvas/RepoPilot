@@ -20,8 +20,8 @@ RepoPilot has established its foundational architecture, product requirements, e
 - [x] **Phase 3:** Hybrid Code-RAG Engine (Qdrant + BM25 + FlashRank) (Completed - PR #4)
 - [x] **Phase 4:** FastMCP Code Server & Dockerized Pytest Sandbox (Completed - PR #5)
 - [x] **Phase 5:** LangGraph Multi-Agent State Engine & Self-Correction Feedback Loop (Completed - PR #6)
-- [ ] **Phase 6:** FastAPI SSE Gateway & Vue 3 Real-time Canvas (Next Up)
-- [ ] **Phase 7:** Benchmark Evaluations, Chaos Testing, and CI/CD Automation
+- [x] **Phase 6:** FastAPI SSE Gateway & Vue 3 Real-time Canvas (Completed - PR #7)
+- [ ] **Phase 7:** Benchmark Evaluations, Chaos Testing, and CI/CD Automation (Next Up)
 
 ---
 
