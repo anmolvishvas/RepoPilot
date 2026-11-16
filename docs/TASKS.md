@@ -82,19 +82,19 @@
 
 ## Phase 5: LangGraph Multi-Agent State Engine & Self-Correction Feedback Loop
 
-- [ ] **TASK-501: LangGraph State Machine Architecture**
+- [x] **TASK-501: LangGraph State Machine Architecture**
   - **Description:** Define `MigrationState` and construct the cyclic `StateGraph` (`src/repopilot/agents/graph.py`) linking Planner, Synthesizer, and Critic nodes.
   - **Acceptance Criteria:** State transitions are immutable and recorded in SQLite checkpointer with full time-travel capability.
 
-- [ ] **TASK-502: Planner & Supervisor Agent Node**
+- [x] **TASK-502: Planner & Supervisor Agent Node**
   - **Description:** Implement `PlannerNode` (`src/repopilot/agents/planner.py`) decomposing migration recipes into an ordered sequence of file modifications.
   - **Acceptance Criteria:** Generates a topological execution plan respecting the AST call graph dependencies.
 
-- [ ] **TASK-503: Code Synthesizer Agent Node**
+- [x] **TASK-503: Code Synthesizer Agent Node**
   - **Description:** Implement `SynthesizerNode` (`src/repopilot/agents/synthesizer.py`) generating standard unified diffs informed by AST context and caller contracts.
   - **Acceptance Criteria:** Synthesizes syntactically valid unified diffs that cleanly apply to the staging git worktree.
 
-- [ ] **TASK-504: Test Critic & Self-Healing Reflection Node**
+- [x] **TASK-504: Test Critic & Self-Healing Reflection Node**
   - **Description:** Implement `CriticNode` (`src/repopilot/agents/critic.py`) analyzing Pytest stack traces to formulate targeted repair prompts.
   - **Acceptance Criteria:** Triggers a maximum of 3 self-healing retry iterations when tests fail; resolves common syntax and missing-await regressions autonomously.
 

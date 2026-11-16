@@ -45,3 +45,19 @@ class RAGRetrievalError(RepoPilotError):
 
 class ConfigurationError(RepoPilotError):
     """Raised when application settings or environment variables are invalid."""
+
+
+class AgentExecutionError(RepoPilotError):
+    """Raised when an agent node fails during plan, synthesis, or reflection."""
+
+
+class PlannerError(AgentExecutionError):
+    """Raised when the Planner agent fails to produce a viable migration plan."""
+
+
+class SynthesizerError(AgentExecutionError):
+    """Raised when the Synthesizer agent fails to generate code patches."""
+
+
+class CriticError(AgentExecutionError):
+    """Raised when the Critic agent fails during test analysis and reflection."""
