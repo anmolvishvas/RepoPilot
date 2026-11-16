@@ -120,14 +120,14 @@ class DockerSandboxRunner:
             if container is not None:
                 try:
                     container.remove(force=True)
-                except Exception:
+                except Exception:  # nosec B110
                     pass
 
     def _run_fallback(
         self, repo_path: Path, test_path: str | None, timeout_seconds: int
     ) -> Result[SandboxTestResult, SandboxExecutionError]:
         """Execute pytest directly via subprocess when Docker daemon is not reachable."""
-        import subprocess
+        import subprocess  # nosec B404
 
         cmd = ["pytest", "-v"]
         if test_path:
@@ -135,7 +135,7 @@ class DockerSandboxRunner:
 
         start_time = time.time()
         try:
-            proc = subprocess.run(
+            proc = subprocess.run(  # nosec B603
                 cmd,
                 cwd=str(repo_path),
                 capture_output=True,

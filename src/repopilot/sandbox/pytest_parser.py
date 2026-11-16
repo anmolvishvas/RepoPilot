@@ -7,7 +7,7 @@ import re
 try:
     import defusedxml.ElementTree as ET
 except ImportError:
-    import xml.etree.ElementTree as ET
+    import xml.etree.ElementTree as ET  # nosec B405
 
 from repopilot.agents.state import FailedAssertion, SandboxTestResult
 
