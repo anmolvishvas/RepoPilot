@@ -30,7 +30,7 @@ const inputTaskId = ref("");
 
 // New Migration Modal
 const showNewMigrationModal = ref(false);
-const newRepoPath = ref("C:/Users/anmol/Desktop/MyEnterpriseApp");
+const newRepoPath = ref("/workspace/enterprise-app");
 const newRecipe = ref("sync-to-async");
 const newMaxRetries = ref(3);
 const isSubmittingMigration = ref(false);
@@ -51,122 +51,91 @@ function showToast(msg: string, type: "success" | "warning" = "success") {
 // PRESET MIGRATIONS SCENARIOS (ANY USER CAN CHOOSE)
 // -----------------------------------------------------------------------------
 
-const PRESET_SEED: MigrationState = {
-  task_id: "76704270c8b2",
-  repo_path: "C:\\Users\\DELL\\Desktop\\SEED",
-  recipe: "sync-to-async (Full-Stack Enterprise Modernization)",
+const PRESET_FASTAPI: MigrationState = {
+  task_id: "fastapi_modernization_01",
+  repo_path: "/workspace/fastapi-enterprise-service",
+  recipe: "FastAPI Lifespan & Coroutine Modernization",
   phase: "human_review",
   is_terminal: false,
-  retry_count: 2,
+  retry_count: 1,
   max_retries: 3,
   plan: {
-    recipe: "sync-to-async",
+    recipe: "fastapi-upgrade",
     steps: [
       {
         step_number: 1,
-        file_path: "architecture/shlomo/diagrams/generator.py",
-        transformation_description: "Convert synchronous diagram definitions to async coroutines",
-        target_symbol_ids: ["generator.define_seedx_inside", "generator.generate"],
+        file_path: "src/api/lifespan.py",
+        transformation_description: "Migrate deprecated on_event('startup') to asynccontextmanager lifespan handler",
+        target_symbol_ids: ["api.lifespan.lifespan_handler"],
       },
       {
         step_number: 2,
-        file_path: "backoffice/pinot/shlomo/create_shlomo_experiment_file/create_shlomo_experiment_file.py",
-        transformation_description: "Modernize Excel ingestion pipeline to async I/O coroutines",
-        target_symbol_ids: ["create_shlomo_experiment_file.get_data_file", "create_shlomo_experiment_file.main"],
+        file_path: "src/services/database.py",
+        transformation_description: "Convert database connection pool management to async lifespan context",
+        target_symbol_ids: ["services.database.init_db_pool"],
       },
       {
         step_number: 3,
-        file_path: "backoffice/pinot/detect/classifier-from-manual/classifier_from_manual.py",
-        transformation_description: "Propagate async coroutine execution to classifier dataset loader",
-        target_symbol_ids: ["classifier_from_manual.load_dataset"],
+        file_path: "src/api/routes.py",
+        transformation_description: "Update FastAPI app initialization to pass lifespan=lifespan",
+        target_symbol_ids: ["api.main.app"],
       },
     ],
     affected_files: [
-      "architecture/shlomo/diagrams/generator.py",
-      "backoffice/pinot/shlomo/create_shlomo_experiment_file/create_shlomo_experiment_file.py",
-      "backoffice/pinot/detect/classifier-from-manual/classifier_from_manual.py",
-      "backoffice/pinot/export_manual_data/export_manual_data.py",
-      "services/vision/tray_detection/detector.py",
-      "services/controlplane/seedx_controller.py",
+      "src/api/lifespan.py",
+      "src/services/database.py",
+      "src/api/routes.py",
     ],
   },
   patches: [
     {
-      file_path: "architecture/shlomo/diagrams/generator.py",
-      diff_text: `--- a/architecture/shlomo/diagrams/generator.py\n+++ b/architecture/shlomo/diagrams/generator.py\n@@ -10,7 +10,7 @@\n-def define_seedx_inside():\n+async def define_seedx_inside():\n     components = {}\n     with Cluster("Seed-X Inside"):\n         components["netgate"] = NetgateFirewall("Netgate SG-1100")\n@@ -93,7 +93,7 @@\n-def generate(diagram_type):\n+async def generate(diagram_type):\n     with Diagram(diagram_type.value, filename=f"Seed-X Sorter - {diagram_type.value}"):\n-        seedx_inside = define_seedx_inside()\n+        seedx_inside = await define_seedx_inside()`,
-      target_symbol: "generator.generate",
-      explanation: "Converted synchronous diagram generation to asynchronous coroutines with non-blocking caller await.",
+      file_path: "src/api/lifespan.py",
+      diff_text: `--- a/src/api/lifespan.py\n+++ b/src/api/lifespan.py\n@@ -1,8 +1,9 @@\n+from contextlib import asynccontextmanager\n from fastapi import FastAPI\n \n-@app.on_event("startup")\n-async def startup_event():\n-    await init_db_pool()\n+@asynccontextmanager\n+async def lifespan(app: FastAPI):\n+    await init_db_pool()\n+    yield\n+    await close_db_pool()`,
+      target_symbol: "api.lifespan.lifespan",
+      explanation: "Replaced deprecated @app.on_event('startup') with modern asynccontextmanager lifespan protocol.",
     },
     {
-      file_path: "backoffice/pinot/shlomo/create_shlomo_experiment_file/create_shlomo_experiment_file.py",
-      diff_text: `--- a/create_shlomo_experiment_file.py\n+++ b/create_shlomo_experiment_file.py\n@@ -14,7 +14,7 @@\n-def get_data_file(data_file_path):\n+async def get_data_file(data_file_path):\n     df = pd.read_excel(data_file_path)\n     data = df.to_numpy()\n     return data\n@@ -102,7 +102,7 @@\n-def main():\n+async def main():\n     s3_client = boto3.client("s3")\n-    data = get_data_file("trays.xlsx")\n+    data = await get_data_file("trays.xlsx")`,
-      target_symbol: "create_shlomo_experiment_file.main",
-      explanation: "Modernized file parsing to async def and added await to caller site.",
+      file_path: "src/services/database.py",
+      diff_text: `--- a/src/services/database.py\n+++ b/src/services/database.py\n@@ -15,4 +15,4 @@\n-def init_db_pool():\n-    return create_engine(DATABASE_URL)\n+async def init_db_pool():\n+    return await create_async_engine(DATABASE_URL)`,
+      target_symbol: "services.database.init_db_pool",
+      explanation: "Upgraded synchronous engine initialization to asynchronous connection pool.",
     },
     {
-      file_path: "backoffice/pinot/detect/classifier-from-manual/classifier_from_manual.py",
-      diff_text: `--- a/classifier_from_manual.py\n+++ b/classifier_from_manual.py\n@@ -24,4 +24,5 @@\n-def train_model(dataset_path: str):\n-    data = load_dataset(dataset_path)\n+async def train_model(dataset_path: str):\n+    data = await load_dataset(dataset_path)\n     return Classifier.fit(data)`,
-      target_symbol: "classifier_from_manual.train_model",
-      explanation: "Converted dataset training entrypoint to async coroutine.",
+      file_path: "src/api/routes.py",
+      diff_text: `--- a/src/api/routes.py\n+++ b/src/api/routes.py\n@@ -10,2 +10,2 @@\n-app = FastAPI(title="Enterprise API")\n+app = FastAPI(title="Enterprise API", lifespan=lifespan)`,
+      target_symbol: "api.routes.app",
+      explanation: "Passed lifespan context manager into FastAPI app constructor.",
     },
   ],
-  reflections: [
-    {
-      iteration: 1,
-      root_cause_analysis: "Missing await operator in caller function generate().",
-      suggested_patch_adjustments: ["Add 'await' before define_seedx_inside()"],
-      target_files_to_remediate: ["architecture/shlomo/diagrams/generator.py"],
-    },
-  ],
+  reflections: [],
   tool_traces: [
     {
       tool_name: "planner_agent",
-      args: { recipe: "sync-to-async", repo: "C:/Users/DELL/Desktop/SEED" },
-      execution_time_ms: 34942.3,
+      args: { recipe: "fastapi-upgrade" },
+      execution_time_ms: 24.5,
       success: true,
-      output_summary: "Tree-sitter indexed 1,308 files. Synthesized 1,308 migration steps in call-graph order.",
+      output_summary: "Analyzed FastAPI lifecycle hooks. Generated 3-step topological lifespan migration.",
     },
     {
       tool_name: "synthesizer_agent",
-      args: { target_files: 3 },
-      execution_time_ms: 8572.9,
+      args: { step: 1 },
+      execution_time_ms: 78.4,
       success: true,
-      output_summary: "Synthesized 785 patch hunks across target modules.",
+      output_summary: "Generated asynccontextmanager lifespan handler and async engine diffs.",
     },
     {
       tool_name: "docker_sandbox_runner",
-      args: { test_suite: "tests/test_diagrams.py" },
-      execution_time_ms: 3522.7,
-      success: false,
-      output_summary: "FAILED: 1 test assertion failed (coroutine was never awaited).",
-    },
-    {
-      tool_name: "critic_agent",
-      args: { iteration: 1 },
-      execution_time_ms: 45.0,
+      args: { test_suite: "tests/test_api_lifespan.py" },
+      execution_time_ms: 910.0,
       success: true,
-      output_summary: "Critic diagnosed missing await in caller site. Initiated repair cycle 2.",
-    },
-    {
-      tool_name: "synthesizer_agent",
-      args: { reflection_repair: true },
-      execution_time_ms: 6120.0,
-      success: true,
-      output_summary: "Synthesized repaired AST patches with resolved await expressions.",
-    },
-    {
-      tool_name: "docker_sandbox_runner",
-      args: { test_suite: "tests/test_diagrams.py" },
-      execution_time_ms: 2890.0,
-      success: true,
-      output_summary: "PASSED: All tests passed. Ephemeral test container destroyed.",
+      output_summary: "PASSED: Lifespan startup and shutdown hooks executed cleanly with zero deprecation warnings.",
     },
     {
       tool_name: "human_review",
-      args: { status: "awaiting_approval" },
+      args: { status: "ready" },
       execution_time_ms: 0.0,
       success: true,
-      output_summary: "Halted at safe human-in-the-loop checkpoint for operator verification.",
+      output_summary: "Breakpoint reached. Awaiting operator sign-off.",
     },
   ],
 };
@@ -324,15 +293,15 @@ const PRESET_HTTPX: MigrationState = {
   ],
 };
 
-// Current active state
-const state = ref<MigrationState>(PRESET_SEED);
-const selectedPreset = ref<"seed" | "pydantic" | "httpx">("seed");
+// Current active state (defaults to Async HTTPX with live self-healing loop)
+const state = ref<MigrationState>(PRESET_HTTPX);
+const selectedPreset = ref<"httpx" | "pydantic" | "fastapi">("httpx");
 
-function switchPreset(preset: "seed" | "pydantic" | "httpx") {
+function switchPreset(preset: "httpx" | "pydantic" | "fastapi") {
   selectedPreset.value = preset;
-  if (preset === "seed") state.value = JSON.parse(JSON.stringify(PRESET_SEED));
+  if (preset === "httpx") state.value = JSON.parse(JSON.stringify(PRESET_HTTPX));
   else if (preset === "pydantic") state.value = JSON.parse(JSON.stringify(PRESET_PYDANTIC));
-  else state.value = JSON.parse(JSON.stringify(PRESET_HTTPX));
+  else state.value = JSON.parse(JSON.stringify(PRESET_FASTAPI));
 
   if (state.value.patches.length > 0) {
     activeSelectedFile.value = state.value.patches[0].file_path;
@@ -614,12 +583,12 @@ onMounted(async () => {
         <div class="flex items-center space-x-1.5 bg-slate-950/80 p-1 border border-slate-800 rounded-lg text-xs font-mono">
           <span class="text-slate-500 text-[10px] uppercase font-bold px-1.5 hidden lg:inline">Scenario:</span>
           <button
-            @click="switchPreset('seed')"
-            :class="selectedPreset === 'seed' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'"
+            @click="switchPreset('httpx')"
+            :class="selectedPreset === 'httpx' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'"
             class="px-2.5 py-1 rounded text-[11px] transition-all"
-            title="Real SEED enterprise repository with 1,308 files and 785 patches"
+            title="Async HTTPX Modernization with Self-Healing Loop"
           >
-            SEED (1,308 Files)
+            Async HTTPX
           </button>
           <button
             @click="switchPreset('pydantic')"
@@ -630,12 +599,12 @@ onMounted(async () => {
             Pydantic v2
           </button>
           <button
-            @click="switchPreset('httpx')"
-            :class="selectedPreset === 'httpx' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'"
+            @click="switchPreset('fastapi')"
+            :class="selectedPreset === 'fastapi' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'"
             class="px-2.5 py-1 rounded text-[11px] transition-all"
-            title="Async Httpx with Self-Healing Loop"
+            title="FastAPI Lifespan & Async Engine Modernization"
           >
-            Async Httpx
+            FastAPI Lifespan
           </button>
         </div>
 
@@ -805,10 +774,10 @@ onMounted(async () => {
               <div class="flex items-center space-x-2 text-[10px] font-mono">
                 <button
                   type="button"
-                  @click="newRepoPath = 'C:/Users/DELL/Desktop/SEED'"
+                  @click="newRepoPath = 'https://github.com/tiangolo/fastapi'"
                   class="text-indigo-400 hover:text-indigo-300 transition"
                 >
-                  SEED
+                  FastAPI
                 </button>
                 <span class="text-slate-700">•</span>
                 <button
@@ -831,7 +800,7 @@ onMounted(async () => {
             <input
               v-model="newRepoPath"
               type="text"
-              placeholder="e.g. C:/Users/DELL/Desktop/SEED or https://github.com/myorg/myapp"
+              placeholder="e.g. /workspace/enterprise-app or https://github.com/myorg/myapp"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-slate-200 focus:outline-none focus:border-indigo-500"
             />
             <p class="text-[10px] text-slate-500 font-mono mt-1">Local path, cloned directory, or remote GitHub repository URL.</p>
